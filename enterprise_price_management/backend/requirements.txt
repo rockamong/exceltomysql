@@ -1,0 +1,3 @@
+Flask
+openpyxl
+mysql-connector-python

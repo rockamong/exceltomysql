@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>查询价格 - 企业价格库</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>企业价格库管理</h1>
+        <nav>
+            <a href="upload.html">上传文件</a>
+            <a href="search.html" class="active">查询价格</a>
+            <a href="db_config.html">数据库配置</a>
+        </nav>
+    </header>
+    <main>
+        <h2>查询设备价格</h2>
+        <form id="searchForm">
+            <input type="text" id="deviceName" name="deviceName" placeholder="请输入设备名称" required>
+            <button type="submit">查询</button>
+        </form>
+        <div id="searchMessage" class="message"></div>
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>设备名称</th>
+                    <th>设备参数</th>
+                    <th>设备单价 (元)</th>
+                    <th>录入时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Results will be inserted here by JavaScript -->
+            </tbody>
+        </table>
+    </main>
+    <footer>
+        <p>&copy; 2023 企业价格库</p>
+    </footer>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const deviceNameInput = document.getElementById('deviceName');
+            const resultsTableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+            const searchMessageDiv = document.getElementById('searchMessage');
+            
+            resultsTableBody.innerHTML = ''; // Clear previous results
+            searchMessageDiv.textContent = '';
+            searchMessageDiv.className = 'message';
+
+            const deviceName = deviceNameInput.value.trim();
+            if (!deviceName) {
+                searchMessageDiv.textContent = '请输入设备名称进行查询。';
+                searchMessageDiv.classList.add('error');
+                return;
+            }
+
+            try {
+                // Note: Backend expects 'deviceName' as the query parameter name
+                const response = await fetch(`/search?deviceName=${encodeURIComponent(deviceName)}`, { 
+                    method: 'GET'
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json().catch(() => null); // Try to parse error, but don't fail if not JSON
+                    searchMessageDiv.textContent = (errorResult && errorResult.message) || `查询失败，状态码：${response.status}`;
+                    searchMessageDiv.classList.add('error');
+                    return;
+                }
+
+                const responseData = await response.json();
+                const results = Array.isArray(responseData) ? responseData : responseData.data; // Check if responseData is array or has .data
+
+                if (!results || results.length === 0) { // Check if results is null, undefined, or empty
+                    searchMessageDiv.textContent = '未找到相关设备信息。';
+                    searchMessageDiv.classList.add('info');
+                } else {
+                    results.forEach(item => {
+                        let row = resultsTableBody.insertRow();
+                        row.insertCell().textContent = item.id;
+                        row.insertCell().textContent = item.shebei_mingcheng;
+                        row.insertCell().textContent = item.shebei_canshu;
+                        row.insertCell().textContent = item.shebei_danjia;
+                        row.insertCell().textContent = item.luru_shijian;
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error searching:', error);
+                searchMessageDiv.textContent = '查询过程中发生错误，请检查网络连接或联系管理员。';
+                searchMessageDiv.classList.add('error');
+            }
+        });
+    </script>
+</body>
+</html>

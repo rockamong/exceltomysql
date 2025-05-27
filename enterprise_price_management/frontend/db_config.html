@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库配置 - 企业价格库</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>企业价格库管理</h1>
+        <nav>
+            <a href="upload.html">上传文件</a>
+            <a href="search.html">查询价格</a>
+            <a href="db_config.html" class="active">数据库配置</a>
+        </nav>
+    </header>
+    <main>
+        <h2>数据库连接配置</h2>
+        <form id="dbConfigForm">
+            <div>
+                <label for="dbHost">主机 (Host):</label>
+                <input type="text" id="dbHost" name="DB_HOST" required>
+            </div>
+            <div>
+                <label for="dbPort">端口 (Port):</label>
+                <input type="number" id="dbPort" name="DB_PORT" required>
+            </div>
+            <div>
+                <label for="dbUser">用户名 (User):</label>
+                <input type="text" id="dbUser" name="DB_USER" required>
+            </div>
+            <div>
+                <label for="dbPassword">密码 (Password):</label>
+                <input type="password" id="dbPassword" name="DB_PASSWORD">
+                <small>（如需修改密码请输入，否则留空）</small>
+            </div>
+            <div>
+                <label for="dbName">数据库名称 (Database Name):</label>
+                <input type="text" id="dbName" name="DB_NAME" required>
+            </div>
+            <button type="submit">保存配置</button>
+        </form>
+        <div id="configMessage" class="message"></div>
+    </main>
+    <footer>
+        <p>&copy; 2023 企业价格库</p>
+    </footer>
+    <script>
+        const dbHostInput = document.getElementById('dbHost');
+        const dbPortInput = document.getElementById('dbPort');
+        const dbUserInput = document.getElementById('dbUser');
+        const dbPasswordInput = document.getElementById('dbPassword'); // Intentionally not pre-filled
+        const dbNameInput = document.getElementById('dbName');
+        const configMessageDiv = document.getElementById('configMessage');
+
+        async function fetchDbConfig() {
+            configMessageDiv.textContent = '';
+            configMessageDiv.className = 'message';
+            try {
+                const response = await fetch('/config/db', { method: 'GET' });
+                if (!response.ok) {
+                    const errorResult = await response.json().catch(() => null);
+                    configMessageDiv.textContent = (errorResult && errorResult.message) || `获取配置失败: ${response.status}`;
+                    configMessageDiv.classList.add('error');
+                    return;
+                }
+                const config = await response.json();
+                dbHostInput.value = config.DB_HOST || '';
+                dbPortInput.value = config.DB_PORT || '';
+                dbUserInput.value = config.DB_USER || '';
+                dbNameInput.value = config.DB_NAME || '';
+                // Password (DB_PASSWORD) is intentionally not fetched or displayed for security
+            } catch (error) {
+                console.error('Error fetching DB config:', error);
+                configMessageDiv.textContent = '获取数据库配置时出错。';
+                configMessageDiv.classList.add('error');
+            }
+        }
+
+        document.getElementById('dbConfigForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            configMessageDiv.textContent = '';
+            configMessageDiv.className = 'message';
+
+            const configData = {
+                DB_HOST: dbHostInput.value,
+                DB_PORT: parseInt(dbPortInput.value, 10),
+                DB_USER: dbUserInput.value,
+                DB_NAME: dbNameInput.value
+            };
+
+            // Only include password if user entered something
+            if (dbPasswordInput.value) {
+                configData.DB_PASSWORD = dbPasswordInput.value;
+            }
+
+            try {
+                const response = await fetch('/config/db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    configMessageDiv.textContent = result.message || '配置已成功保存！';
+                    configMessageDiv.classList.add('success');
+                    dbPasswordInput.value = ''; // Clear password field after submission
+                } else {
+                    configMessageDiv.textContent = result.message || '保存配置失败。';
+                    configMessageDiv.classList.add('error');
+                }
+            } catch (error) {
+                console.error('Error saving DB config:', error);
+                configMessageDiv.textContent = '保存数据库配置时出错。';
+                configMessageDiv.classList.add('error');
+            }
+        });
+
+        // Fetch and display current config on page load
+        document.addEventListener('DOMContentLoaded', fetchDbConfig);
+    </script>
+</body>
+</html>

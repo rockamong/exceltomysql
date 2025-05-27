@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传Excel文件 - 企业价格库</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>企业价格库管理</h1>
+        <nav>
+            <a href="upload.html" class="active">上传文件</a>
+            <a href="search.html">查询价格</a>
+            <a href="db_config.html">数据库配置</a>
+        </nav>
+    </header>
+    <main>
+        <h2>上传Excel价格文件</h2>
+        <form id="uploadForm">
+            <input type="file" id="excelFile" name="excelFile" accept=".xls,.xlsx" required>
+            <button type="submit">上传文件</button>
+        </form>
+        <div id="message" class="message"></div>
+    </main>
+    <footer>
+        <p>&copy; 2023 企业价格库</p>
+    </footer>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('excelFile');
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = '';
+            messageDiv.className = 'message';
+
+            if (!fileInput.files.length) {
+                messageDiv.textContent = '请选择一个文件。';
+                messageDiv.classList.add('error');
+                return;
+            }
+
+            const formData = new FormData();
+            // Corrected to use 'file' as the key to match backend app.py
+            formData.append('file', fileInput.files[0]); 
+
+            try {
+                const response = await fetch('/upload', { // Assuming backend runs on the same host/port
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.textContent = result.message || '文件上传成功！';
+                    messageDiv.classList.add('success');
+                    fileInput.value = ''; // Clear the file input
+                } else {
+                    messageDiv.textContent = result.message || '文件上传失败。';
+                    messageDiv.classList.add('error');
+                }
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                messageDiv.textContent = '上传过程中发生错误，请检查网络连接或联系管理员。';
+                messageDiv.classList.add('error');
+            }
+        });
+    </script>
+</body>
+</html>
