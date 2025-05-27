@@ -181,9 +181,17 @@ def search_devices():
             # luru_shijian is already formatted by DATE_FORMAT in SQL
 
         if not results:
-            return jsonify({"message": "未找到相关设备信息。", "data": []}), 200 # Or 404 if preferred
+            # For consistency with frontend expectations (which now also look for direct array or specific message)
+            # it might be better to return an empty list directly if that's the preferred "no results" signal,
+            # or ensure the message structure is distinct.
+            # However, the task focuses on *successful search with results*.
+            # The previous frontend change (turn 32) handles `!results || results.length === 0`
+            # and uses a default '未找到相关设备信息。' message.
+            # So, returning an empty list for "no results" is fine.
+            return jsonify([]), 200 # Return empty list for no results
         
-        return jsonify({"data": results}), 200
+        # Results found, return the list of results directly
+        return jsonify(results), 200
 
     except mysql.connector.Error as err:
         print(f"Database search error: {err}") # Basic logging
